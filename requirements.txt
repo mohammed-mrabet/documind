@@ -1,0 +1,19 @@
+# PyTorch en version CPU (bien plus légère que la version CUDA par défaut)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.3
+
+langchain-core>=1.0,<2
+langchain-text-splitters>=1.0,<2
+langchain-chroma>=1.0,<2
+langchain-ollama>=1.0,<2
+langchain-huggingface>=1.0,<2
+sentence-transformers>=3.0
+chromadb>=1.0
+pypdf>=5.0
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+pydantic>=2.7
+streamlit>=1.40
+requests>=2.31
+reportlab>=4.0

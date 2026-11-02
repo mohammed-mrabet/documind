@@ -1,0 +1,62 @@
+# docker compose up --build
+#   Interface de discussion : http://localhost:8501
+#   API (Swagger)           : http://localhost:8000/docs
+# Premier lancement : téléchargement du LLM (~2 Go), quelques minutes.
+
+services:
+  ollama:
+    image: ollama/ollama:0.40.0
+    volumes:
+      - ollama-models:/root/.ollama
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Télécharge le modèle une seule fois (conservé dans le volume), puis s'arrête.
+  ollama-pull:
+    image: ollama/ollama:0.40.0
+    environment:
+      OLLAMA_HOST: ollama:11434
+    entrypoint: ["ollama", "pull", "${DOCUMIND_LLM_MODEL:-qwen2.5:3b}"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  api:
+    build: .
+    image: documind
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      DOCUMIND_LLM_MODEL: ${DOCUMIND_LLM_MODEL:-qwen2.5:3b}
+    volumes:
+      - ./data/docs:/app/data/docs
+      - chroma-data:/app/data/chroma
+    ports:
+      - "8000:8000"
+    depends_on:
+      ollama-pull:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  ui:
+    image: documind
+    command: ["streamlit", "run", "src/documind/app.py", "--server.port", "8501", "--server.address", "0.0.0.0", "--server.headless", "true"]
+    environment:
+      DOCUMIND_API_URL: http://api:8000
+    ports:
+      - "8501:8501"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  ollama-models:
+  chroma-data:

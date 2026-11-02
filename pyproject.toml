@@ -1,0 +1,20 @@
+[project]
+name = "documind"
+version = "1.0.0"
+description = "Assistant de questions-réponses (RAG) sur des documents d'entreprise"
+requires-python = ">=3.11"
+authors = [{ name = "Mohammed MRABET" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "tests"]
+
+[tool.ruff]
+line-length = 150
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends"]

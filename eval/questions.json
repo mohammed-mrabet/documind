@@ -1,0 +1,190 @@
+[
+  {
+    "question": "Combien de jours de télétravail sont autorisés par semaine ?",
+    "expected_source": "politique_teletravail.pdf",
+    "keywords": [
+      "deux|2"
+    ]
+  },
+  {
+    "question": "Peut-on télétravailler pendant la période d'essai ?",
+    "expected_source": "politique_teletravail.pdf",
+    "keywords": [
+      "essai"
+    ]
+  },
+  {
+    "question": "Quel jour la présence au bureau est-elle obligatoire pour tout le monde ?",
+    "expected_source": "politique_teletravail.pdf",
+    "keywords": [
+      "mercredi"
+    ]
+  },
+  {
+    "question": "Combien de temps à l'avance faut-il déposer une demande de télétravail ?",
+    "expected_source": "politique_teletravail.pdf",
+    "keywords": [
+      "dix|10"
+    ]
+  },
+  {
+    "question": "Quel est le montant de l'indemnité versée par jour de télétravail ?",
+    "expected_source": "politique_teletravail.pdf",
+    "keywords": [
+      "30"
+    ]
+  },
+  {
+    "question": "Pendant quelles heures faut-il être joignable en télétravail ?",
+    "expected_source": "politique_teletravail.pdf",
+    "keywords": [
+      "9h30|9 h 30",
+      "16h30|16 h 30"
+    ]
+  },
+  {
+    "question": "Dans quel délai dois-je saisir ma note de frais ?",
+    "expected_source": "procedure_notes_de_frais.pdf",
+    "keywords": [
+      "30"
+    ]
+  },
+  {
+    "question": "Quel est le plafond de remboursement pour un repas ?",
+    "expected_source": "procedure_notes_de_frais.pdf",
+    "keywords": [
+      "150"
+    ]
+  },
+  {
+    "question": "Combien est remboursée une nuit d'hôtel à Casablanca ?",
+    "expected_source": "procedure_notes_de_frais.pdf",
+    "keywords": [
+      "900"
+    ]
+  },
+  {
+    "question": "Combien est remboursé un kilomètre avec mon véhicule personnel ?",
+    "expected_source": "procedure_notes_de_frais.pdf",
+    "keywords": [
+      "3 dirhams|3 dh|3 mad"
+    ]
+  },
+  {
+    "question": "Qui doit valider une note de frais de plus de 5 000 dirhams ?",
+    "expected_source": "procedure_notes_de_frais.pdf",
+    "keywords": [
+      "directeur financier"
+    ]
+  },
+  {
+    "question": "En combien de jours une note de frais validée est-elle remboursée ?",
+    "expected_source": "procedure_notes_de_frais.pdf",
+    "keywords": [
+      "15"
+    ]
+  },
+  {
+    "question": "Quelle est la longueur minimale d'un mot de passe ?",
+    "expected_source": "charte_informatique.pdf",
+    "keywords": [
+      "12"
+    ]
+  },
+  {
+    "question": "À quelle fréquence faut-il changer son mot de passe ?",
+    "expected_source": "charte_informatique.pdf",
+    "keywords": [
+      "90"
+    ]
+  },
+  {
+    "question": "Ai-je le droit d'utiliser ma clé USB personnelle ?",
+    "expected_source": "charte_informatique.pdf",
+    "keywords": [
+      "interdit"
+    ]
+  },
+  {
+    "question": "Dans quel délai faut-il déclarer la perte d'un ordinateur portable ?",
+    "expected_source": "charte_informatique.pdf",
+    "keywords": [
+      "24"
+    ]
+  },
+  {
+    "question": "Quel numéro de poste appeler pour signaler un incident de sécurité ?",
+    "expected_source": "charte_informatique.pdf",
+    "keywords": [
+      "4444"
+    ]
+  },
+  {
+    "question": "Combien de jours de congés payés ai-je par an ?",
+    "expected_source": "politique_conges.pdf",
+    "keywords": [
+      "18"
+    ]
+  },
+  {
+    "question": "Combien de jours de congé peut-on reporter sur l'année suivante, et jusqu'à quand ?",
+    "expected_source": "politique_conges.pdf",
+    "keywords": [
+      "10",
+      "31 mars"
+    ]
+  },
+  {
+    "question": "Combien de jours d'absence sont accordés pour mon mariage ?",
+    "expected_source": "politique_conges.pdf",
+    "keywords": [
+      "4|quatre"
+    ]
+  },
+  {
+    "question": "Dans quel délai faut-il envoyer un certificat médical aux RH ?",
+    "expected_source": "politique_conges.pdf",
+    "keywords": [
+      "48"
+    ]
+  },
+  {
+    "question": "Quels sont les horaires de travail de référence ?",
+    "expected_source": "guide_accueil.pdf",
+    "keywords": [
+      "8h30|8 h 30",
+      "17h30|17 h 30"
+    ]
+  },
+  {
+    "question": "Quelle part du repas au restaurant d'entreprise est subventionnée ?",
+    "expected_source": "guide_accueil.pdf",
+    "keywords": [
+      "50"
+    ]
+  },
+  {
+    "question": "Quels équipements de protection sont obligatoires dans les ateliers ?",
+    "expected_source": "guide_accueil.pdf",
+    "keywords": [
+      "chaussures",
+      "gilet",
+      "lunettes"
+    ]
+  },
+  {
+    "question": "Quel est le salaire du directeur général ?",
+    "expected_source": null,
+    "keywords": []
+  },
+  {
+    "question": "Quelle est la politique de voiture de fonction ?",
+    "expected_source": null,
+    "keywords": []
+  },
+  {
+    "question": "Quelle est la capitale du Japon ?",
+    "expected_source": null,
+    "keywords": []
+  }
+]
