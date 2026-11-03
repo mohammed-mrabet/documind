@@ -13,15 +13,18 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.vectorstores import VectorStore
 
 from .config import Settings
+from .lexical import BM25
 
 NOT_FOUND = "Je ne trouve pas cette information dans les documents fournis."
 
 SYSTEM_PROMPT = f"""Tu es DocuMind, l'assistant documentaire d'une entreprise.
 Règles :
 1. Réponds uniquement à partir des extraits numérotés ci-dessous, jamais de tes connaissances générales.
-2. Si les extraits ne contiennent pas la réponse, réponds exactement : « {NOT_FOUND} »
-3. Cite chaque information utilisée avec le numéro de son extrait entre crochets, par exemple [1] ou [2].
-4. Réponds en français, de façon précise et concise (trois phrases au maximum), en reprenant les chiffres exacts.
+2. Lis attentivement tous les extraits avant de répondre : la réponse peut se trouver dans n'importe lequel.
+3. Si la question comporte plusieurs parties, réponds à chacune.
+4. Cite chaque information utilisée avec le numéro de son extrait entre crochets, par exemple [1] ou [2].
+5. Réponds en français, de façon précise et concise (trois phrases au maximum), en reprenant les chiffres exacts.
+6. Seulement si aucun extrait ne contient la réponse, écris uniquement : « {NOT_FOUND} »
 
 Extraits :
 {{context}}"""
@@ -63,16 +66,61 @@ def cited_numbers(answer: str) -> set[int]:
 
 
 class RAGPipeline:
+    """Recherche hybride (sémantique + BM25, fusionnées par Reciprocal Rank Fusion) puis génération."""
+
+    RRF_K = 60  # constante standard de la Reciprocal Rank Fusion
+    CANDIDATES = 10  # extraits candidats retenus par chaque méthode avant fusion
+
     def __init__(self, vectorstore: VectorStore, llm: BaseChatModel | None, settings: Settings):
         self.vectorstore = vectorstore
         self.settings = settings
         # llm=None : recherche seule (évaluation de la récupération sans LLM).
         self.chain = PROMPT | llm | StrOutputParser() if llm is not None else None
+        self._bm25: BM25 | None = None
+        self._corpus: list[Document] = []
+        self._corpus_ids: list[str] = []
+
+    def _lexical_index(self) -> BM25:
+        """Index BM25 de tous les extraits, reconstruit si des documents ont été ajoutés ou retirés."""
+        data = self.vectorstore.get(include=["documents", "metadatas"])
+        if self._bm25 is None or data["ids"] != self._corpus_ids:
+            self._corpus_ids = data["ids"]
+            self._corpus = [Document(page_content=t, metadata=m) for t, m in zip(data["documents"], data["metadatas"], strict=True)]
+            self._bm25 = BM25([d.page_content for d in self._corpus])
+        return self._bm25
+
+    def rank(self, question: str, top_k: int | None = None) -> list[tuple[Document, float, float]]:
+        """Classement hybride sans filtrage : (extrait, pertinence sémantique, score BM25)."""
+        top_k = top_k or self.settings.top_k
+        key = lambda d: (d.metadata["source"], d.metadata["page"], d.metadata.get("chunk"))  # noqa: E731
+
+        semantic = self.vectorstore.similarity_search_with_relevance_scores(question, k=self.CANDIDATES)
+        bm25 = self._lexical_index()
+        lexical_scores = bm25.scores(question)
+        lexical = sorted(zip(self._corpus, lexical_scores, strict=True), key=lambda x: x[1], reverse=True)[: self.CANDIDATES]
+        lexical = [(doc, score) for doc, score in lexical if score > 0]
+
+        fused: dict[tuple, dict] = {}
+        for rank, (doc, score) in enumerate(semantic, start=1):
+            entry = fused.setdefault(key(doc), {"doc": doc, "semantic": score, "bm25": 0.0, "rrf": 0.0})
+            entry["rrf"] += 1 / (self.RRF_K + rank)
+        for rank, (doc, score) in enumerate(lexical, start=1):
+            entry = fused.setdefault(key(doc), {"doc": doc, "semantic": 0.0, "bm25": 0.0, "rrf": 0.0})
+            entry["bm25"] = score
+            entry["rrf"] += 1 / (self.RRF_K + rank)
+
+        best = sorted(fused.values(), key=lambda e: e["rrf"], reverse=True)[:top_k]
+        return [(e["doc"], e["semantic"], e["bm25"]) for e in best]
 
     def retrieve(self, question: str, top_k: int | None = None) -> list[tuple[Document, float]]:
-        """Les k extraits les plus proches, filtrés par score de pertinence minimal."""
-        results = self.vectorstore.similarity_search_with_relevance_scores(question, k=top_k or self.settings.top_k)
-        return [(doc, score) for doc, score in results if score >= self.settings.min_relevance]
+        """Extraits à transmettre au LLM, ou liste vide si la question est hors sujet :
+        ni proximité sémantique suffisante, ni mot-clé important en commun."""
+        ranked = self.rank(question, top_k)
+        best_semantic = max((s for _, s, _ in ranked), default=0.0)
+        best_lexical = max((b for _, _, b in ranked), default=0.0)
+        if best_semantic < self.settings.min_relevance and best_lexical < self.settings.min_bm25:
+            return []
+        return [(doc, semantic) for doc, semantic, _ in ranked]
 
     def ask(self, question: str, top_k: int | None = None) -> Answer:
         start = time.perf_counter()

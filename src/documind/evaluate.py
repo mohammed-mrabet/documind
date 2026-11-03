@@ -46,8 +46,7 @@ def keywords_found(answer: str, keywords: list[str]) -> bool:
 def retrieval_metrics(pipeline: RAGPipeline, items: list[dict], k: int) -> dict:
     hits, reciprocal_ranks = [], []
     for item in items:
-        results = pipeline.vectorstore.similarity_search_with_relevance_scores(item["question"], k=k)
-        sources = [doc.metadata["source"] for doc, _ in results]
+        sources = [doc.metadata["source"] for doc, _, _ in pipeline.rank(item["question"], k)]
         rank = sources.index(item["expected_source"]) + 1 if item["expected_source"] in sources else None
         hits.append(rank is not None)
         reciprocal_ranks.append(1 / rank if rank else 0.0)

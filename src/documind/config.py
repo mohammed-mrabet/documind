@@ -28,9 +28,11 @@ class Settings:
 
     chunk_size: int = field(default_factory=lambda: int(_env("DOCUMIND_CHUNK_SIZE", "700")))
     chunk_overlap: int = field(default_factory=lambda: int(_env("DOCUMIND_CHUNK_OVERLAP", "100")))
-    top_k: int = field(default_factory=lambda: int(_env("DOCUMIND_TOP_K", "4")))
+    top_k: int = field(default_factory=lambda: int(_env("DOCUMIND_TOP_K", "5")))
     # En dessous de ce score de pertinence (0 à 1), un extrait est jugé hors sujet.
     min_relevance: float = field(default_factory=lambda: float(_env("DOCUMIND_MIN_RELEVANCE", "0.3")))
+    # Score BM25 minimal pour considérer qu'un extrait partage des mots-clés importants avec la question.
+    min_bm25: float = field(default_factory=lambda: float(_env("DOCUMIND_MIN_BM25", "2.0")))
 
 
 def get_settings() -> Settings:

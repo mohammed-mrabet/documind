@@ -32,7 +32,7 @@ jobs:
           import json, sys
           r = json.load(open('reports/eval.json'))['retrieval']
           print(r)
-          sys.exit(0 if r['hit_at_4'] >= 0.9 else 1)
+          sys.exit(0 if r['hit_at_5'] >= 0.9 else 1)
           "
 
   docker:

@@ -27,6 +27,12 @@ def split_documents(documents: list[Document], chunk_size: int, chunk_overlap: i
         separators=["\n\n", "\n", ". ", " ", ""],
     )
     chunks = splitter.split_documents(documents)
+    for chunk in chunks:
+        # En-tête de contexte : un extrait « 2. Horaires… » seul est ambigu ; avec le titre du
+        # document (« Guide d'accueil… »), la recherche sait de quels horaires il s'agit.
+        title = chunk.metadata.get("title")
+        if title:
+            chunk.page_content = f"{title}\n{chunk.page_content}"
     counters: dict[tuple[str, int], int] = {}
     for chunk in chunks:
         key = (chunk.metadata["source"], chunk.metadata["page"])

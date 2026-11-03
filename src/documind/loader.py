@@ -27,6 +27,7 @@ def clean_page(text: str, repeated_lines: set[str] = frozenset()) -> str:
 def load_pdf(path: Path) -> list[Document]:
     """Un Document par page, avec la source (nom du fichier) et le numéro de page en métadonnées."""
     reader = PdfReader(str(path))
+    title = (reader.metadata.title if reader.metadata and reader.metadata.title else path.stem.replace("_", " ")).strip()
     raw_pages = [page.extract_text() or "" for page in reader.pages]
 
     # Une ligne présente sur toutes les pages d'un document de plusieurs pages = en-tête ou pied de page.
@@ -39,7 +40,7 @@ def load_pdf(path: Path) -> list[Document]:
     for number, raw in enumerate(raw_pages, start=1):
         text = clean_page(raw, repeated)
         if text:
-            documents.append(Document(page_content=text, metadata={"source": path.name, "page": number}))
+            documents.append(Document(page_content=text, metadata={"source": path.name, "page": number, "title": title}))
     return documents
 
 

@@ -15,7 +15,7 @@ Source   : 📄 procedure_notes_de_frais.pdf, page 1
 ## ✨ Fonctionnalités
 
 - **Indexation de PDF** : extraction page par page, nettoyage des pieds de page, découpage en morceaux qui se chevauchent.
-- **Recherche sémantique** : embeddings multilingues HuggingFace stockés dans **ChromaDB**.
+- **Recherche hybride** : embeddings multilingues HuggingFace stockés dans **ChromaDB** + recherche par mots-clés **BM25**, fusionnées par *Reciprocal Rank Fusion*.
 - **Réponses sourcées** : le LLM cite les extraits utilisés (`[1]`, `[2]`) ; l'API renvoie le document, la page et un score de pertinence.
 - **Pas d'invention** : si aucun extrait n'est assez pertinent, DocuMind répond « Je ne trouve pas cette information dans les documents fournis » **sans même appeler le LLM**.
 - **Ajout de documents** à chaud par l'API ou l'interface (un fichier réindexé remplace ses anciens extraits).
@@ -30,8 +30,10 @@ flowchart LR
         S --> E1[Embeddings<br/>MiniLM multilingue] --> DB[(ChromaDB)]
     end
     subgraph Question
-        Q[Question] --> E2[Embedding] --> R{Top-4 extraits<br/>pertinence ≥ 0,3 ?}
-        DB --> R
+        Q[Question] --> E2[Embedding] --> F[Fusion RRF<br/>top 5]
+        Q --> B[BM25<br/>mots-clés] --> F
+        DB --> F
+        F --> R{Extrait pertinent ?<br/>sémantique ≥ 0,3<br/>ou BM25 ≥ 2}
         R -- non --> NF[« Je ne trouve pas… »]
         R -- oui --> P[Prompt + extraits numérotés] --> LLM[LLM local<br/>Qwen 2.5 via Ollama] --> A[Réponse + sources citées]
     end
@@ -41,6 +43,8 @@ flowchart LR
 **Choix techniques**
 - **LLM local avec Ollama** (Qwen 2.5, 3 milliards de paramètres) : les documents internes ne sont jamais envoyés à un service externe, et le modèle tourne sur un PC sans GPU.
 - **Embeddings multilingues** (`paraphrase-multilingual-MiniLM-L12-v2`) : adaptés au français, légers (CPU).
+- **Recherche hybride** : les embeddings captent le sens de la question, BM25 les mots précis (« mot de passe », « USB », « 4444 ») que les embeddings ratent parfois. Les deux classements sont fusionnés par RRF.
+- **Titre du document en tête de chaque extrait** : « 2. Horaires… » seul est ambigu ; précédé de « Guide d'accueil des nouveaux collaborateurs », la recherche sait de quels horaires il s'agit.
 - **Similarité cosinus et seuil de pertinence** : une question hors sujet ne reçoit pas de réponse inventée.
 - **Identifiants d'extraits stables** (`fichier:page:numéro`) : réindexer un document ne crée pas de doublons.
 - **Prompt contraint** : réponse uniquement à partir des extraits, chiffres exacts, citation obligatoire.
@@ -53,7 +57,7 @@ Le jeu [`eval/questions.json`](eval/questions.json) contient **24 questions** do
 
 | Mesure | Ce qu'elle vérifie | Résultat |
 |---|---|---|
-| Recherche hit@1 / hit@4 | Le bon document est-il le 1er extrait / parmi les 4 premiers ? | *à compléter* |
+| Recherche hit@1 / hit@5 | Le bon document est-il le 1er extrait / parmi les 5 premiers ? | *à compléter* |
 | MRR | Rang moyen du bon document (1 = toujours premier) | *à compléter* |
 | Exactitude des réponses | Les informations attendues (« 900 », « 31 mars »…) sont-elles dans la réponse ? | *à compléter* |
 | Exactitude des citations | La réponse cite-t-elle le bon document ? | *à compléter* |
@@ -136,6 +140,7 @@ documind/
 ├── eval/questions.json          # jeu d'évaluation
 ├── scripts/make_sample_docs.py  # génération des PDF
 ├── src/documind/
+│   ├── lexical.py               # recherche par mots-clés BM25
 │   ├── loader.py                # extraction et nettoyage des PDF
 │   ├── ingest.py                # découpage, embeddings, ChromaDB
 │   ├── embeddings.py            # modèle HuggingFace (ou lexical pour les tests)
@@ -151,12 +156,12 @@ documind/
 
 À chaque `push`, GitHub Actions :
 1. vérifie le code (ruff) et lance les tests hors ligne ;
-2. indexe les documents avec le **vrai modèle d'embeddings** et **échoue si hit@4 < 0,9** ;
+2. indexe les documents avec le **vrai modèle d'embeddings** et **échoue si hit@5 < 0,9** ;
 3. construit l'image Docker et vérifie que l'API démarre et indexe les documents.
 
 ## 🗺️ Pistes d'amélioration
 
-- Recherche hybride (BM25 + embeddings) et reranking des extraits
+- Reranking des extraits par un modèle cross-encoder
 - OCR pour les PDF scannés
 - Réponses en streaming dans l'interface
 - Gestion des droits : chaque utilisateur n'interroge que les documents auxquels il a accès
