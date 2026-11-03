@@ -10,7 +10,7 @@ from documind.api import app, get_config, get_pipeline
 
 @pytest.fixture
 def client(store, settings):
-    pipeline = make_pipeline(store, settings, ["Deux jours par semaine maximum [1]."] * 5)
+    pipeline = make_pipeline(store, settings, ["Deux jours par semaine maximum [A]."] * 5)
     app.dependency_overrides[get_pipeline] = lambda: pipeline
     app.dependency_overrides[get_config] = lambda: settings
     yield TestClient(app)
@@ -33,7 +33,7 @@ def test_ask(client):
     r = client.post("/ask", json={"question": "Combien de jours de télétravail par semaine ?"})
     assert r.status_code == 200
     data = r.json()
-    assert data["found"] and "[1]" in data["answer"]
+    assert data["found"] and "[A]" in data["answer"]
     assert data["sources"][0]["source"] == "politique_teletravail.pdf"
     assert data["sources"][0]["cited"]
 

@@ -22,15 +22,28 @@ Règles :
 1. Réponds uniquement à partir des extraits numérotés ci-dessous, jamais de tes connaissances générales.
 2. Lis attentivement tous les extraits avant de répondre : la réponse peut se trouver dans n'importe lequel.
 3. Si la question comporte plusieurs parties, réponds à chacune.
-4. Cite chaque information utilisée avec le numéro de son extrait entre crochets, par exemple [1] ou [2].
-5. Réponds en français, de façon précise et concise (trois phrases au maximum), en reprenant les chiffres exacts.
+4. Écris des phrases complètes qui reprennent les chiffres exacts (montants, délais, numéros), puis cite
+   l'extrait utilisé avec sa lettre entre crochets à la fin de la phrase, par exemple : « Le plafond est de 150 dirhams [A]. »
+5. Réponds en français, de façon précise et concise (trois phrases au maximum).
 6. Seulement si aucun extrait ne contient la réponse, écris uniquement : « {NOT_FOUND} »
 
 Extraits :
 {{context}}"""
 
 PROMPT = ChatPromptTemplate.from_messages([("system", SYSTEM_PROMPT), ("human", "{question}")])
-_CITATION = re.compile(r"\[(\d+)\]")
+# Lettres plutôt que chiffres : un petit LLM confond facilement « [2] » avec une valeur numérique.
+_CITATION = re.compile(r"\[([A-Z])\]")
+_NOT_FOUND = re.compile(r"je ne (trouve|dispose)|ne figure pas|pas (cette|d'|de cette) information", re.IGNORECASE)
+
+
+def letter(i: int) -> str:
+    """1 -> A, 2 -> B..."""
+    return chr(ord("A") + i - 1)
+
+
+def is_not_found(answer: str) -> bool:
+    """Détecte une abstention, même formulée un peu différemment (« Je ne trouve cette information… »)."""
+    return bool(_NOT_FOUND.search(answer))
 
 
 @dataclass
@@ -57,12 +70,13 @@ class Answer:
 
 def format_context(documents: list[Document]) -> str:
     return "\n\n".join(
-        f"[{i}] ({d.metadata['source']}, page {d.metadata['page']})\n{d.page_content}" for i, d in enumerate(documents, start=1)
+        f"[{letter(i)}] ({d.metadata['source']}, page {d.metadata['page']})\n{d.page_content}" for i, d in enumerate(documents, start=1)
     )
 
 
 def cited_numbers(answer: str) -> set[int]:
-    return {int(n) for n in _CITATION.findall(answer)}
+    """Numéros (1, 2...) des extraits cités sous forme de lettres ([A], [B]...)."""
+    return {ord(c) - ord("A") + 1 for c in _CITATION.findall(answer)}
 
 
 class RAGPipeline:
@@ -149,7 +163,7 @@ class RAGPipeline:
             question=question,
             answer=text,
             sources=sources,
-            found=NOT_FOUND.rstrip(".").lower() not in text.lower(),
+            found=not is_not_found(text),
             latency_ms=int((time.perf_counter() - start) * 1000),
         )
 

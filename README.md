@@ -8,7 +8,7 @@ Exemple d'échange :
 
 ```
 Question : « Combien est remboursée une nuit d'hôtel à Casablanca ? »
-Réponse  : Une nuit d'hôtel à Casablanca est remboursée dans la limite de 900 dirhams [1].
+Réponse  : Une nuit d'hôtel à Casablanca est remboursée dans la limite de 900 dirhams [A].
 Source   : 📄 procedure_notes_de_frais.pdf, page 1
 ```
 
@@ -16,7 +16,7 @@ Source   : 📄 procedure_notes_de_frais.pdf, page 1
 
 - **Indexation de PDF** : extraction page par page, nettoyage des pieds de page, découpage en morceaux qui se chevauchent.
 - **Recherche hybride** : embeddings multilingues HuggingFace stockés dans **ChromaDB** + recherche par mots-clés **BM25**, fusionnées par *Reciprocal Rank Fusion*.
-- **Réponses sourcées** : le LLM cite les extraits utilisés (`[1]`, `[2]`) ; l'API renvoie le document, la page et un score de pertinence.
+- **Réponses sourcées** : le LLM cite les extraits utilisés (`[A]`, `[B]`) ; l'API renvoie le document, la page et un score de pertinence.
 - **Pas d'invention** : si aucun extrait n'est assez pertinent, DocuMind répond « Je ne trouve pas cette information dans les documents fournis » **sans même appeler le LLM**.
 - **Ajout de documents** à chaud par l'API ou l'interface (un fichier réindexé remplace ses anciens extraits).
 - **Évaluation chiffrée** sur un jeu de 27 questions dont la réponse est connue.

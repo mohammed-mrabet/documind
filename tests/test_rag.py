@@ -9,7 +9,7 @@ def test_recherche_trouve_le_bon_document(store, settings):
 
 
 def test_reponse_sourcee(store, settings):
-    pipeline = make_pipeline(store, settings, ["Un repas est remboursé dans la limite de 150 dirhams [1]."])
+    pipeline = make_pipeline(store, settings, ["Un repas est remboursé dans la limite de 150 dirhams [A]."])
     answer = pipeline.ask("Quel est le plafond de remboursement pour un repas ?")
     assert answer.found
     assert [s.source for s in answer.cited_sources] == [answer.sources[0].source]
@@ -33,5 +33,13 @@ def test_format_context_et_citations():
     from langchain_core.documents import Document
 
     ctx = format_context([Document(page_content="Texte", metadata={"source": "a.pdf", "page": 2})])
-    assert ctx == "[1] (a.pdf, page 2)\nTexte"
-    assert cited_numbers("Selon [1] et [3], puis [1].") == {1, 3}
+    assert ctx == "[A] (a.pdf, page 2)\nTexte"
+    assert cited_numbers("Selon [A] et [C], puis [A].") == {1, 3}
+
+
+def test_detection_des_abstentions():
+    from documind.rag import is_not_found
+
+    assert is_not_found(NOT_FOUND)
+    assert is_not_found("Je ne trouve cette information dans les documents fournis.")  # « pas » oublié par le LLM
+    assert not is_not_found("Le plafond est de 150 dirhams [A].")
