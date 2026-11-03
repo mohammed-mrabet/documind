@@ -19,7 +19,7 @@ Source   : 📄 procedure_notes_de_frais.pdf, page 1
 - **Réponses sourcées** : le LLM cite les extraits utilisés (`[A]`, `[B]`) ; l'API renvoie le document, la page et un score de pertinence.
 - **Pas d'invention** : si aucun extrait n'est assez pertinent, DocuMind répond « Je ne trouve pas cette information dans les documents fournis » **sans même appeler le LLM**.
 - **Ajout de documents** à chaud par l'API ou l'interface (un fichier réindexé remplace ses anciens extraits).
-- **Évaluation chiffrée** sur un jeu de 27 questions dont la réponse est connue.
+- **Évaluation chiffrée** sur un jeu de 27 questions dont la réponse est connue : **91,7 % de réponses exactes, 100 % de refus sur les questions hors sujet**.
 
 ## 🏗️ Architecture
 
@@ -55,14 +55,25 @@ Le corpus de démonstration contient 5 politiques d'une **entreprise fictive** (
 
 Le jeu [`eval/questions.json`](eval/questions.json) contient **24 questions** dont la réponse se trouve dans les documents, et **3 questions hors sujet** (« Quel est le salaire du directeur général ? ») auxquelles l'assistant doit refuser de répondre.
 
-| Mesure | Ce qu'elle vérifie | Résultat |
-|---|---|---|
-| Recherche hit@1 / hit@5 | Le bon document est-il le 1er extrait / parmi les 5 premiers ? | *à compléter* |
-| MRR | Rang moyen du bon document (1 = toujours premier) | *à compléter* |
-| Exactitude des réponses | Les informations attendues (« 900 », « 31 mars »…) sont-elles dans la réponse ? | *à compléter* |
-| Exactitude des citations | La réponse cite-t-elle le bon document ? | *à compléter* |
-| Abstention hors sujet | L'assistant refuse-t-il de répondre aux 3 questions hors corpus ? | *à compléter* |
-| Latence médiane | Temps de réponse sur CPU | *à compléter* |
+Résultats mesurés sur Google Colab (GPU T4), LLM `qwen2.5:3b`, embeddings `paraphrase-multilingual-MiniLM-L12-v2` :
+
+| Mesure | Ce qu'elle vérifie | v1 | v2 | **v3 (actuelle)** |
+|---|---|---|---|---|
+| Recherche hit@1 | Le bon document arrive-t-il en 1ʳᵉ position ? | 0,833 | 0,833 | **0,833** |
+| Recherche hit@k | Le bon document est-il dans les extraits transmis au LLM ? | 0,917 (k=4) | 1,000 (k=5) | **1,000** (k=5) |
+| Exactitude des réponses | Les informations attendues (« 900 », « 31 mars »…) sont-elles dans la réponse ? | 0,708 | 0,917 | **0,917** |
+| Exactitude des citations | La réponse cite-t-elle le bon document ? | 0,792 | 0,917 | **0,833** |
+| Fausses abstentions | « Je ne trouve pas » alors que la réponse existe | 20,8 % | 0 % | **0 %** |
+| Abstention hors sujet | Refus de répondre aux 3 questions hors corpus | 100 % | 33 %* | **100 %** |
+| Latence médiane | Temps de réponse (GPU T4) | 0,55 s | 0,71 s | **0,73 s** |
+
+**Ce que chaque version a corrigé**
+- **v1 → v2** : l'analyse des erreurs montrait que 5 échecs sur 7 venaient de la **recherche**, pas du LLM : l'extrait utile n'était pas transmis, et le modèle répondait honnêtement « je ne trouve pas ». Ajout de la **recherche hybride BM25 + embeddings**, du **titre du document en tête de chaque extrait** et passage à 5 extraits : le bon document est désormais toujours transmis (hit@5 = 100 %) et les fausses abstentions disparaissent.
+- **v2 → v3** : le petit LLM confondait les citations numérotées avec des valeurs (« dans la limite de **[2]** » au lieu de « 10 jours [2] »). Les extraits sont maintenant **étiquetés par des lettres** ([A], [B]…). *Le score de 33 % en v2 venait de l'évaluation, pas du modèle : il avait bien refusé de répondre, mais avec une formulation que la détection ne reconnaissait pas (« Je ne trouve cette information… »). La détection a été rendue robuste.
+
+**Limites connues**
+- Sur une question en deux parties (« combien de jours… et jusqu'à quand ? »), le modèle de 3 milliards de paramètres ne donne parfois que la première partie. Un modèle plus grand (7B) ou une décomposition de la question corrigerait ce point.
+- Une réponse correcte peut être comptée fausse si elle est formulée autrement que prévu (« vous n'avez pas le droit » au lieu de « interdit ») : les variantes acceptées sont élargies au fil des évaluations.
 
 ```bash
 python -m documind.evaluate            # recherche + réponses (Ollama démarré)

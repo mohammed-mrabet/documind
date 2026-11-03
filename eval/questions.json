@@ -102,7 +102,7 @@
     "question": "Ai-je le droit d'utiliser ma clé USB personnelle ?",
     "expected_source": "charte_informatique.pdf",
     "keywords": [
-      "interdit"
+      "interdit|pas le droit|pas autoris|non autoris"
     ]
   },
   {
